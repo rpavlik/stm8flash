@@ -93,7 +93,8 @@ bool usb_init(programmer_t *pgm, unsigned int vid, unsigned int pid) {
 
 	pgm->dev_handle = libusb_open_device_with_vid_pid(ctx, vid, pid);
 	pgm->ctx = ctx;
-	assert(pgm->dev_handle);
+	if (!pgm->dev_handle) spawn_error("Could not open USB device.");
+	// assert(pgm->dev_handle);
 
 	libusb_free_device_list(devs, 1); //free the list, unref the devices in it
 
