@@ -97,7 +97,8 @@ bool usb_init(programmer_t *pgm, unsigned int vid, unsigned int pid) {
 
 	pgm->dev_handle = libusb_open_device_with_vid_pid(ctx, vid, pid);
 	pgm->ctx = ctx;
-	assert(pgm->dev_handle);
+	if (!pgm->dev_handle) spawn_error("Could not open USB device.");
+	// assert(pgm->dev_handle);
 
 	libusb_free_device_list(devs, 1); //free the list, unref the devices in it
 
@@ -106,10 +107,8 @@ bool usb_init(programmer_t *pgm, unsigned int vid, unsigned int pid) {
 		assert(r == 0);
 	}
 
-#if defined(__APPLE__) || defined(WIN32)
 	r = libusb_claim_interface(pgm->dev_handle, 0);
 	assert(r == 0);
-#endif
 
 	return(true);
 }
@@ -128,7 +127,7 @@ const stm8_device_t *get_part(const char *name)
 }
 
 int main(int argc, char **argv) {
-	int start, bytes_count = 0;
+	unsigned int start, bytes_count = 0;
 	char filename[256];
 	memset(filename, 0, sizeof(filename));
 	// Parsing command line
@@ -302,7 +301,7 @@ int main(int argc, char **argv) {
         }
 		if(!(f = fopen(filename, "w")))
 			spawn_error("Failed to open file");
-		if(is_ext(filename, ".ihx")) 
+		if(is_ext(filename, ".ihx") || is_ext(filename, ".hex"))
 		{
 			fprintf(stderr, "Reading from Intel hex file ");
 			ihex_write(f, buf, start, start+bytes_count);
@@ -333,7 +332,7 @@ int main(int argc, char **argv) {
 		if(!buf2) spawn_error("malloc failed");
 		int bytes_to_verify;
 		/* reading bytes to RAM */
-		if(is_ext(filename, ".ihx")) {
+		if(is_ext(filename, ".ihx") || is_ext(filename, ".hex")) {
 			bytes_to_verify = ihex_read(f, buf, start, start + bytes_count);
 		} else {
 			fseek(f, 0L, SEEK_END);
@@ -365,7 +364,7 @@ int main(int argc, char **argv) {
 		int bytes_to_write;
 
 		/* reading bytes to RAM */
-		if(is_ext(filename, ".ihx")) {
+		if(is_ext(filename, ".ihx") || is_ext(filename, ".hex")) {
 			fprintf(stderr, "Writing Intel hex file ");
 			bytes_to_write = ihex_read(f, buf, start, start + bytes_count);
 		} else {
